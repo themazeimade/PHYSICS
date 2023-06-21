@@ -2,3 +2,6 @@
 	path = dependencies/glfw
 	url = https://github.com/glfw/glfw.git
 	branch = 3.3.8
+[submodule "dependencies/glm"]
+	path = dependencies/glm
+	url = https://github.com/g-truc/glm.git
