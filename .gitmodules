@@ -4,4 +4,5 @@
 	branch = 3.3.8
 [submodule "dependencies/glm"]
 	path = dependencies/glm
-	url = https://github.com/g-truc/glm.git
+  url = https://github.com/g-truc/glm.git
+  branch = 0.9.9.8
