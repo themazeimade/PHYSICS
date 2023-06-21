@@ -19,3 +19,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE ./dependencies/glfw/include/)
 target_link_libraries(${PROJECT_NAME} PRIVATE ./dependencies/glfw/build/src/)
+
+set(glm_DIR ./dependencies/glm/cmake/glm)
+find_package(glm REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+# target_include_directories(${PROJECT_NAME} PRIVATE glm)
