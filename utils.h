@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <deque>
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <optional>
@@ -14,12 +15,21 @@
 #include <fstream>
 #define GLM_FORCE_RADIANS
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <limits>
+#include <queue>
 #include <set>
 #include <stdexcept>
-#include <functional>
-#include <queue>
+#include <thread>
+
+#define _GRAVITY -9.8
+#define _AIRDENSITY 1.23
+#define _DRAG 0.6
+#define _WINDSPEED 10
+#define _TIMESTEP 0.0166
+#define _RESTITUTION 0.5
+// #define _TARGET_FPS 0.01667
 
 VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
@@ -43,31 +53,32 @@ struct SwapChainSupportDetails {
   std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct DeletionQueue //extracted from vkguide  chapter 2
+struct FunctionQueue // extracted from vkguide  chapter 2
 {
-  std::deque<std::function<void()>> deletors; 
-  
-	void push_function(std::function<void()>&& function) {
-		deletors.push_back(function);
-	}
+  std::deque<std::function<void()>> deletors;
 
-	void flush() {
-		// reverse iterate the deletion queue to execute all the functions
-		for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
-			(*it)(); //call the function
-		}
+  void push_function(std::function<void()> &&function) {
+    deletors.push_back(function);
+  }
 
-		deletors.clear();
-	}
+  void flush() {
+    // reverse iterate the deletion queue to execute all the functions
+    for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+      (*it)(); // call the function
+    }
+
+    deletors.clear();
+  }
 };
 
 struct Vertex {
-  glm::vec2 pos;
+  glm::vec3 pos;
   glm::vec3 color;
+  glm::vec2 texcoord;
 
   static VkVertexInputBindingDescription getBindingDescription();
 
-  static std::array<VkVertexInputAttributeDescription, 2>
+  static std::array<VkVertexInputAttributeDescription, 3>
   getAttributeDescriptions();
 };
 
@@ -88,20 +99,21 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-enum ShapeType
-{
- vTriangle=0, vQuad = 1, vCircle =2,
+enum ShapeType {
+  vTriangle = 0,
+  vQuad = 1,
+  vCircle = 2,
 };
 
 struct UniformBufferObject {
-  glm::mat4 model;
-  glm::mat4 view;
-  glm::mat4 proj;
+  glm::mat4 model = glm::mat4(1);
+  glm::mat4 view = glm::mat4(1);
+  glm::mat4 proj = glm::mat4(1);
 };
 
-// const std::vector<Vertex> vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-//                                       {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-//                                       {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-//                                       {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
-//
-// const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+namespace line {
+bool insideSegment(glm::vec3 p, glm::vec3 p1, glm::vec3 p3);
+int orientation(glm::vec3 p, glm::vec3 p1, glm::vec3 p3);
+bool pIntersection(glm::vec2 p1, glm::vec2 p2, glm::vec2 q1, glm::vec2 q2,
+                   glm::vec3 &fill);
+} // namespace line
