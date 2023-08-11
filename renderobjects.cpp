@@ -1,40 +1,53 @@
-#include "physicsProperties.h"
+#include "renderobjects.h"
+#include "imgui.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <iostream>
 #include <stdint.h>
 
-objProperties::objProperties(/* float _radius */) {
+objProperties::objProperties() {
+  std::cout << "properties constructor called" << std::endl;
   fmass = 1.0f;
-  vpos = glm::vec3(0.f);
-  vvelocity = glm::vec3(0.f);
-  fspeed = 0.0;
-  vforces = glm::vec3(0.f);
+
+  vpos = glm::vec3(0.0f,0.0f,0.0f);
+  vprevPos = glm::vec3(0.0f,0.0f,0.0f);
+
+  vvelocity = glm::vec3(0.0f,0.0f,0.0f);
+  fspeed = 0.0f;
+  vforces = glm::vec3(0.0f,0.0f,0.0f);
   // fRadius = _radius;
-  vgravity.x = 0;
+  vgravity.x = 0.0f;
   vgravity.y = fmass * _GRAVITY;
+  vImpactforces = glm::vec3(0.0f,0.0f,0.0f);
 };
 
 void objProperties::CalcF() {
   vforces = glm::vec3(0.f);
+
   if (bCollision) {
     vforces += vImpactforces;
   } else {
-
+    // std::cout << "adding external forces" << std::endl;
     vforces += vgravity;
-    glm::vec3 vDrag;
-    float fDrag;
+
+    glm::vec3 vDrag(0.0f, 0.0f, 0.0f);
+    float fDrag(0.0f);
+
     vDrag -= vvelocity;
-    vDrag = glm::normalize(vDrag);
-    fDrag = 0.5 * _AIRDENSITY * fspeed * fspeed *
-            (3.14159 * fRadius * fRadius) * _DRAG;
+    glm::normalize(vDrag);
+
+    fDrag = static_cast<float>(
+        0.5 * _AIRDENSITY * static_cast<double>(fspeed * fspeed) *
+        static_cast<double>(3.14159f * fRadius * fRadius) * _DRAG);
     vDrag *= fDrag;
     vforces += vDrag;
-    // Wind
-    glm::vec3 vWind;
-    vWind.x = 0.5 * _AIRDENSITY * _WINDSPEED * _WINDSPEED *
-              (3.14159 * fRadius * fRadius) * _DRAG;
+
+    // // Wind
+    glm::vec3 vWind(0.0f,0.0f,0.0f);
+    vWind.x = static_cast<float>(
+        0.5 * _AIRDENSITY * _WINDSPEED * _WINDSPEED *
+        static_cast<double>(3.14159f * fRadius * fRadius) * _DRAG);
     vforces += vWind;
   }
 }
@@ -43,17 +56,21 @@ void objProperties::updateEuler(double dt) {
   glm::vec3 a;
   glm::vec3 dv;
   glm::vec3 ds;
-  ;
 
   a = vforces / fmass;
   dv = a * static_cast<float>(dt);
   vvelocity += dv;
 
   ds = vvelocity * static_cast<float>(dt);
+  // vprevPos = vpos;
   vpos += ds;
+  
+  // std::cout << "vprevPos: (" << vprevPos.x << ", " << vprevPos.y << ")" << std::endl
+  //           << "vpos: (" << vpos.x << ", " << vpos.y << ")" << std::endl;
 
-  fspeed = vvelocity.length();
+  fspeed = glm::length(vvelocity);
 }
+
 void renderobject::createMeshBuffers() {
   if (mesh->vertices.empty() || mesh->indices.empty()) {
     throw std::runtime_error("no data to be attached to buffer");
@@ -161,12 +178,12 @@ void renderobject::prepareRenderProperties() {
 }
 void renderobject::injectMethods2commandB(VkCommandBuffer commandbuffer_) {
   updateUBO();
-  if(mesh->shaderPrimitive != true) {
-   vkCmdBindPipeline(commandbuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    pipeline);
+  if (mesh->shaderPrimitive != true) {
+    vkCmdBindPipeline(commandbuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      pipeline);
   } else {
-  vkCmdBindPipeline(commandbuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                    *(context->getdefaultPipeline()));
+    vkCmdBindPipeline(commandbuffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      *(context->getdefaultPipeline()));
   }
   VkBuffer vertexBuffers[] = {vertexBuffer};
   VkDeviceSize offsets[] = {0};
@@ -181,7 +198,7 @@ void renderobject::injectMethods2commandB(VkCommandBuffer commandbuffer_) {
 void renderobject::updateUBO() {
   UniformBufferObject ubo_;
   // do stuff with that
-  ubo_.model = glm::translate(ubo_.model,properties->vpos);
+  ubo_.model = glm::translate(ubo_.model, mesh->properties->vpos);
   // ubo_.model = glm::translate(MVP.model,glm::vec3(3.f));
   ubo_.view = glm::lookAt(
       glm::vec3(context->lookat0, context->lookat1, context->lookat2),
@@ -195,7 +212,53 @@ void renderobject::updateUBO() {
 }
 
 void renderobject::createMeshPipeline() {
-  if(mesh->shaderPrimitive != true) {
- context->createDerivativePipeline("../shaders/vert01.spv","../shaders/frag01.spv", pipeline);
+  if (mesh->shaderPrimitive != true) {
+    context->createDerivativePipeline("../shaders/vert01.spv",
+                                      "../shaders/frag01.spv", pipeline);
   }
 }
+
+void renderObjectQueue::push_renderobject(std::unique_ptr<renderobject> ro_) {
+  if (ro_->mesh->transparent == true) {
+    shapes.push_front(std::move(ro_));
+    std::cout << "pushed to the front" << std::endl;
+    frontier++;
+  } else {
+    shapes.push_back(std::move(ro_));
+    std::cout << "pushed to the back" << std::endl;
+  }
+};
+
+void renderObjectQueue::flush(VkCommandBuffer commandBuffer_) {
+  for (auto it = shapes.rbegin(); it != shapes.rend(); it++) {
+    (*it)->injectMethods2commandB(commandBuffer_);
+  }
+}
+
+void renderObjectQueue::flushGuiCalls() {
+  int j = 0;
+  for (auto it = shapes.rbegin() + 1; it != shapes.rend(); it++) {
+    ImGui::PushID(j);
+    ImGui::Text("Object %i", j);
+    ImGui::Text("Enter a value x:");
+    ImGui::SameLine(); // Place the input box on the same line as the label
+    ImGui::SliderFloat("x", &((*it)->mesh->properties->vpos.x), -10.0f, 10.0f);
+    ImGui::Text("Enter a value y");
+    ImGui::SameLine(); // Place the input box on the same line as the label
+    ImGui::SliderFloat("y", &((*it)->mesh->properties->vpos.y), -10.0f, 10.0f);
+    ImGui::Text("Enter a value z:");
+    ImGui::SameLine(); // Place the input box on the same line as the label
+    ImGui::SliderFloat("z", &((*it)->mesh->properties->vpos.z), -10.0f, 10.0f);
+    ImGui::Spacing();
+    ImGui::Text("vvelocity.x: %.3f",
+                static_cast<float>((*it)->mesh->properties->vvelocity.x));
+    ImGui::Text("vvelocity.y: %.3f",
+                static_cast<float>((*it)->mesh->properties->vvelocity.y));
+    ImGui::Text("vprevPos.x: %.3f",
+                static_cast<float>((*it)->mesh->properties->vprevPos.x));
+    ImGui::Text("vprevPos.y: %.3f",
+                static_cast<float>((*it)->mesh->properties->vprevPos.y));
+    ImGui::PopID();
+    j++;
+  }
+};

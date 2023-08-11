@@ -22,13 +22,15 @@
 #include <set>
 #include <stdexcept>
 #include <thread>
+#include <iomanip>
 
 #define _GRAVITY -9.8
 #define _AIRDENSITY 1.23
 #define _DRAG 0.6
-#define _WINDSPEED 10
-#define _TIMESTEP 0.0166
+#define _WINDSPEED 1.5
+#define _TIMESTEP 0.005555 
 #define _RESTITUTION 0.5
+#define _STEPCOUNT 3
 // #define _TARGET_FPS 0.01667
 
 VkResult CreateDebugUtilsMessengerEXT(
@@ -115,5 +117,5 @@ namespace line {
 bool insideSegment(glm::vec3 p, glm::vec3 p1, glm::vec3 p3);
 int orientation(glm::vec3 p, glm::vec3 p1, glm::vec3 p3);
 bool pIntersection(glm::vec2 p1, glm::vec2 p2, glm::vec2 q1, glm::vec2 q2,
-                   glm::vec3 &fill);
+                   glm::vec2 &fill);
 } // namespace line

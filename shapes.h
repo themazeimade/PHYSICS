@@ -1,13 +1,35 @@
 #include "vulkanApp.h"
 #include <glm/fwd.hpp>
+#include <memory>
 #include <stdint.h>
 #include <tuple>
 #include <vector>
+
+struct objProperties {
+  objProperties();
+  // physicsProperties();
+  // ~physicsProperties();
+  float fmass;
+  glm::vec3 vpos;
+  glm::vec3 vvelocity;
+  float fspeed;
+  glm::vec3 vforces;
+  float fRadius;
+  glm::vec3 vgravity;
+  glm::vec3 vprevPos;
+  glm::vec3 vImpactforces;
+  bool bCollision;
+
+
+  void CalcF();
+  void updateEuler(double dt);
+};
 
 class Shape {
 public:
   Shape(){
       // buildBuffers();
+    properties = std::make_unique<objProperties>();
   };
   virtual ~Shape(){
       // destroyBuffers();
@@ -26,8 +48,10 @@ public:
   std::vector<uint16_t> indices;
   bool shaderPrimitive = false;
   bool transparent = false;
+  std::unique_ptr<objProperties> properties;
 // protected:
   // void buildBuffers();
   // std::vector<Vertex> getVertices();
   // void destroyBuffers();
 };
+

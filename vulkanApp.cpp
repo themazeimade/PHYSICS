@@ -47,6 +47,7 @@ void vkEngine::mouse_callback(GLFWwindow *window, double xpos, double ypos) {
   app->currClickX = xpos;
   app->currClickY = ypos;
 }
+
 void vkEngine::mouse_button_callback(GLFWwindow *window, int button, int action,
                                      int mods) {
   ImGuiIO &io = ImGui::GetIO();

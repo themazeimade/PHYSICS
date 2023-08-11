@@ -1,4 +1,5 @@
 // #include <glm/fwd.hpp>
+#pragma once
 #include "geometry.h"
 #include <iostream>
 #include <memory>
@@ -6,32 +7,32 @@
 
 #define MAX_VELOCITY 25.0f
 
-struct objProperties {
-  // physicsProperties();
-  // ~physicsProperties();
-  float fmass;
-  glm::vec3 vpos;
-  glm::vec3 vvelocity;
-  float fspeed;
-  glm::vec3 vforces;
-  float fRadius;
-  glm::vec3 vgravity;
-  glm::vec3 vprevPos;
-  glm::vec3 vImpactforces;
-  bool bCollision;
-
-  objProperties(/* float _radius */);
-
-  void CalcF();
-  void updateEuler(double dt);
-};
+// struct objProperties {
+//   // physicsProperties();
+//   // ~physicsProperties();
+//   float fmass;
+//   glm::vec3 vpos;
+//   glm::vec3 vvelocity;
+//   float fspeed;
+//   glm::vec3 vforces;
+//   float fRadius;
+//   glm::vec3 vgravity;
+//   glm::vec3 vprevPos;
+//   glm::vec3 vImpactforces;
+//   bool bCollision;
+//
+//   objProperties(/* float _radius */);
+//
+//   void CalcF();
+//   void updateEuler(double dt);
+// };
 
 class renderobject {
 public:
   renderobject(vkEngine *context_) : context(context_) {
     PipeLayout = context_->getPipeLayout();
     // properties = new objProperties;
-    properties = std::make_unique<objProperties>();
+    // mesh->properties = std::make_unique<objProperties>();
   };
   ~renderobject() { 
     // destroyMeshBuffers(); 
@@ -53,7 +54,7 @@ public:
 
   vkEngine* context;
   std::unique_ptr<Shape> mesh;
-  std::unique_ptr<objProperties> properties;
+  // std::unique_ptr<objProperties> properties;
   UniformBufferObject MVP;
 
   // fill objects
@@ -82,4 +83,22 @@ public:
   void prepareRenderProperties();
 
   void injectMethods2commandB(VkCommandBuffer commandbuffer_);
+};
+
+struct renderObjectQueue {
+  renderObjectQueue() { /* shapes.clear(); */ };
+  ~renderObjectQueue() {
+
+    std::cout << "renderQueue destructor called" << std::endl;
+  };
+
+  std::deque<std::unique_ptr<renderobject>> shapes;
+  //opaqye frontier, first transparent index object fron rbegin to rend
+  int frontier = -1;
+
+  void push_renderobject(std::unique_ptr<renderobject> ro_) ;
+
+  void flush(VkCommandBuffer commandBuffer_) ;
+
+  void flushGuiCalls();
 };

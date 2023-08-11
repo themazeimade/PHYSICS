@@ -19,10 +19,12 @@ void renderer::renderLoop() {
 
     glfwPollEvents();
 
-    // handle physics
-
     // handle input
     appInput();
+
+    // handle physics
+    // std::cout << std::endl << std::endl << " New Frame" << std::endl;
+    physics->updatesimulation(objectQueue.get());
 
     draw_imgui();
     draw();
@@ -81,20 +83,20 @@ void renderer::draw_imgui() {
                 1000.0f / io.Framerate, io.Framerate);
     // ImGui::Text("Cursor Xpos: %.2f and Ypos: %.2f ",
     // static_cast<float>(currX), static_cast<float>(currY));
-    ImVec2 mPos = ImGui::GetMousePos();
-    ImGui::Text("Cursor Xpos: %.2f and Ypos: %.2f ", mPos.x, mPos.y);
-    ImGui::Text("Was Clicked: %i, Last initial click at x: %.2f and y: %.2f",
-                LeftClick, initialX, initialY);
-    ImGui::Spacing();
-    ImGui::Text("Current click at x: %.2f and y: %.2f", currClickX, currClickY);
-    ImGui::Text("click Direction: (%.2f , %.2f), click magnitude: %.2f",
-                click[0], click[1], clickLength);
-    ImGui::Text("clickratio: %.2f", clickRatio);
-    ImGui::Text("velocity x: %.2f, y: %.2f",
-                objectQueue->shapes.front()->properties->vvelocity[0],
-                objectQueue->shapes.front()->properties->vvelocity[1]);
+    // ImVec2 mPos = ImGui::GetMousePos();
+    // ImGui::Text("Cursor Xpos: %.2f and Ypos: %.2f ", mPos.x, mPos.y);
+    // ImGui::Text("Was Clicked: %i, Last initial click at x: %.2f and y: %.2f",
+    //             LeftClick, initialX, initialY);
+    // ImGui::Spacing();
+    // ImGui::Text("Current click at x: %.2f and y: %.2f", currClickX, currClickY);
+    // ImGui::Text("click Direction: (%.2f , %.2f), click magnitude: %.2f",
+    //             click[0], click[1], clickLength);
+    // ImGui::Text("clickratio: %.2f", clickRatio);
+    // ImGui::Text("velocity x: %.2f, y: %.2f",
+    //             objectQueue->shapes.front()->mesh->properties->vvelocity[0],
+    //             objectQueue->shapes.front()->mesh->properties->vvelocity[1]);
     ImGui::Text("last circle speed: %.2f",
-                objectQueue->shapes.front()->properties->fspeed);
+                objectQueue->shapes.front()->mesh->properties->fspeed);
     ImGui::End();
   }
 
@@ -245,8 +247,8 @@ void renderer::recordCommandBuffer(VkCommandBuffer commandBuffer,
   //                         pipelineLayout, 0, 1,
   //                         &descriptorSets[currentFrame], 0, nullptr);
   //
-  // vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(a->indexCount), 1, 0,
-  // 0,
+  // vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(a->indexCount), 1,
+  // 0, 0,
   //                  0);
 
   ImGui_ImplVulkan_RenderDrawData(draw_data, commandBuffer);
@@ -263,7 +265,7 @@ void renderer::appInput() {
   if (drawCircle == true) {
     std::unique_ptr<renderobject> appinput =
         std::make_unique<renderobject>(this);
-    appinput->mesh = std::make_unique<Scircle>(3.f);
+    appinput->mesh = std::make_unique<Scircle>(0.5f);
     appinput->prepareRenderProperties();
 
     // objectQueue->push_renderobject(std::make_shared<renderobject>(this));
@@ -283,9 +285,9 @@ void renderer::appInput() {
 
     norm = norm * 10.f;
 
-    appinput->properties->vpos =
+    appinput->mesh->properties->vpos =
         glm::inverse(proj) * glm::inverse(view) * glm::vec4(norm, 0.999f, 10.f);
-    appinput->properties->vpos[2] = 0.f;
+    appinput->mesh->properties->vpos[2] = 0.f;
     objectQueue->push_renderobject(std::move(appinput));
 
     drawCircle = false;
@@ -296,8 +298,8 @@ void renderer::appInput() {
     clickRatio = std::min(clickLength / hip, 1.f);
     click = glm::normalize(click) * clickRatio * MAX_VELOCITY;
     click[1] *= -1.f;
-    objectQueue->shapes.front()->properties->vvelocity = glm::vec3(click, 0.f);
-    objectQueue->shapes.front()->properties->fspeed = clickRatio * MAX_VELOCITY;
+    objectQueue->shapes.front()->mesh->properties->vvelocity = glm::vec3(click, 0.f);
+    objectQueue->shapes.front()->mesh->properties->fspeed = clickRatio * MAX_VELOCITY;
     setVelocityCircle = false;
     // objectQueue->shapes.front()->setvelocity();
   }

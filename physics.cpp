@@ -1,8 +1,6 @@
 #include "physics.h"
-#include <algorithm>
-#include <glm/fwd.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
-#include <stdexcept>
 
 bool physicsEngine::checkwallcollisions(glm::vec3 p1, glm::vec3 p2,
                                         glm::vec3 q1, glm::vec3 q2) {
@@ -38,89 +36,121 @@ bool physicsEngine::checkwallcollisions(glm::vec3 p1, glm::vec3 p2,
 
 bool physicsEngine::checkCollisions(renderobject *boundary,
                                     renderobject *simObject) {
-  glm::vec3 n;
-  glm::vec3 vr;
-  float vrn;
-  float J;
-  glm::vec3 Fi;
+  // std::cout << std::endl << "Physics output" << std::endl;
+  glm::vec3 n(0.0f, 0.0f, 0.0f);
+  glm::vec3 vr(0.0f, 0.0f, 0.0f);
+  float vrn(0.0f);
+  float J(0.0f);
+  glm::vec3 Fi(0.0f, 0.0f, 0.0f);
   bool hasCollision = false;
 
-  std::vector<Vertex> &vertices = boundary->mesh->vertices;
-  objProperties &objectData = *simObject->properties;
+  std::vector<Vertex> wallverts = boundary->mesh->vertices;
+  objProperties *objectData = simObject->mesh->properties.get();
+  objectData->vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
+  glm::vec3 storePrevPos(0.0f);
+
+  // objectData->vprevPos = objectData->vpos;
+
+  Shape *check = boundary->mesh.get();
 
   //  setup checkCollisions
-  if (typeid(*boundary->mesh) != typeid(Square))
+  if (typeid(*(check)) != typeid(Square))
+    // if (typeid(*(boundary->mesh.get())) != typeid(Square))
     throw std::runtime_error("boundary not Square");
+  check = nullptr;
 
-  if (objectData.vpos.x <= vertices[0].pos.x + objectData.fRadius ||
-      objectData.vpos.y <= vertices[0].pos.y + objectData.fRadius ||
-      objectData.vpos.y >= vertices[2].pos.y - objectData.fRadius ||
-      objectData.vpos.x >= vertices[2].pos.x - objectData.fRadius) {
+  if (objectData->vpos.x <= wallverts[0].pos.x + objectData->fRadius ||
+      objectData->vpos.y <= wallverts[0].pos.y + objectData->fRadius ||
+      objectData->vpos.y >= wallverts[2].pos.y - objectData->fRadius ||
+      objectData->vpos.x >= wallverts[2].pos.x - objectData->fRadius) {
+
     // check for collision inside boundary
-    glm::vec3 collidedWall;
-    glm::vec3 intersectionpoint;
-    glm::vec3 wallPoint01;
-    glm::vec3 wallPoint02;
+    glm::vec3 collidedWall(0.0f);
+    glm::vec2 intersectionpoint(0.0f);
+    // glm::mat4 rotationMat(0.0f);
+    glm::vec3 impactDir(0.0f);
+    glm::mat4 rotationMat = glm::rotate(glm::identity<glm::mat4>(), glm::radians(90.0f),
+                              glm::vec3(0.0f, 0.0f, 1.0f));
+
     for (int i = 0; i <= 3; i++) {
+      glm::vec3 wallPoint02(0.0f);
+      glm::vec3 wallPoint01(0.0f);
       int before = (i + 3) % 4;
-      wallPoint02 = glm::vec3(vertices[before].pos, 0.f);
-      wallPoint01 = glm::vec3(vertices[i].pos, 0.f);
+      wallPoint02 = wallverts[before].pos;
+      wallPoint01 = wallverts[i].pos;
       switch (i) {
       case 0:
-        wallPoint01.x += objectData.fRadius;
-        wallPoint02.x += objectData.fRadius;
+        wallPoint01.x += objectData->fRadius;
+        wallPoint02.x += objectData->fRadius;
+        break;
       case 1:
-        wallPoint01.y += objectData.fRadius;
-        wallPoint02.y += objectData.fRadius;
+        wallPoint01.y += objectData->fRadius;
+        wallPoint02.y += objectData->fRadius;
+        break;
       case 2:
-        wallPoint01.x -= objectData.fRadius;
-        wallPoint02.x -= objectData.fRadius;
+        wallPoint01.x -= objectData->fRadius;
+        wallPoint02.x -= objectData->fRadius;
+        break;
       case 3:
-        wallPoint01.y -= objectData.fRadius;
-        wallPoint02.y -= objectData.fRadius;
+        wallPoint01.y -= objectData->fRadius;
+        wallPoint02.y -= objectData->fRadius;
+        break;
       }
-      if (checkwallcollisions(objectData.vpos, objectData.vprevPos,
-                              wallPoint01,
-                              wallPoint02)) {
-        // collidedWall = glm::vec3(vertices[before].pos - vertices[i].pos, 0.f);
-        collidedWall = wallPoint01 - wallPoint02; 
-        line::pIntersection(objectData.vpos, objectData.vprevPos, wallPoint01 , wallPoint02 ,
-                            intersectionpoint);
+      if (checkwallcollisions(objectData->vpos, objectData->vprevPos,
+                              wallPoint01, wallPoint02) == true) {
+
+        // collidedWall = wallPoint01 - wallPoint02;
+        impactDir += glm::normalize(wallPoint01-wallPoint02);
+        line::pIntersection(objectData->vpos, objectData->vprevPos, wallPoint01,
+                            wallPoint02, intersectionpoint);
         break;
       }
     }
 
-    glm::vec3 impactDir = glm::normalize(collidedWall);
-    glm::mat4 rotationMat =
-        glm::rotate(rotationMat, glm::radians(90.f), glm::vec3(0.f, 0.f, 1.f));
     impactDir = rotationMat * glm::vec4(impactDir, 0.f);
-    vr = objectData.vvelocity;
+    vr = objectData->vvelocity;
     vrn = glm::dot(vr, impactDir);
-    if (vrn < 0.0f) {
-      J = -(vrn) * (1 - _RESTITUTION) * objectData.fmass;
-      Fi = impactDir;
-      Fi *= J / _TIMESTEP;
 
-      objectData.vImpactforces = Fi;
-      objectData.vpos.y = intersectionpoint.y;
-      objectData.vpos.x = intersectionpoint.x;
-      //   objectData.vImpactforces += Fi;
-      //   objectData.vpos.y = _GROUND_PLANE + objectData.fRadius;
-      //   objectData.vpos.x =
-      //       ((_GROUND_PLANE +
-      //         objectData.fRadius − objectData.vPreviousPosition.y) /
-      //        (objectData.vpos.y - objectData.vprevPos.y) *
-      //        (objectData.vpos.x - objectData.vprevPos.x)) +
-      //       objectData.vprevPos.x;
-      //   hasCollision = true;
+    if (vrn < 0.0f) {
+      // std::cout << "inside impulse handling" << std::endl;
+      J = -1.0f * (glm::dot(vr, impactDir)) *
+          (1 + static_cast<float>(_RESTITUTION)) * objectData->fmass;
+      Fi = impactDir;
+      Fi *= J / static_cast<float>(_TIMESTEP);
+      objectData->vImpactforces = Fi;
+      storePrevPos = objectData->vpos;
+      objectData->vpos.y = intersectionpoint.y;
+      objectData->vpos.x = intersectionpoint.x;
+      // objectData->vpos.z = 0;
+
+      hasCollision = true;
     }
+
+    objectData->vprevPos = storePrevPos;
   };
-    return hasCollision;
+  objectData = nullptr;
+  return hasCollision;
 };
-  // void physicsEngine::updatesimulation() {
-    //   for(i=0; i<_MAX_NUM_UNITS; i++)
-    // {
-    // Units[i].bCollision = CheckForCollisions(&(Units[i]));
-    // Units[i].CalcLoads();
-    // Units[i].UpdateBodyEuler(dt);
-  // }
+void physicsEngine::updatesimulation(renderObjectQueue *queue) {
+  int &_frontier = queue->frontier;
+  if (_frontier == -1) {
+    std::cout << "frontier not iniated" << std::endl;
+    return;
+  }
+  double dt = _TIMESTEP;
+  auto boundingBox = queue->shapes.back().get();
+
+  for (int i = 0; i < _STEPCOUNT; i++) {
+    for (auto it = queue->shapes.begin() + _frontier;
+         it >= queue->shapes.begin(); it--) {
+      auto _simObject = it->get();
+      _simObject->mesh->properties->bCollision =
+          checkCollisions(boundingBox, _simObject);
+      _simObject->mesh->properties->CalcF();
+      _simObject->mesh->properties->updateEuler(dt);
+      _simObject = nullptr;
+    }
+  }
+  boundingBox = nullptr;
+  queue = nullptr;
+}

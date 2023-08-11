@@ -22,10 +22,12 @@ private:
 
 class Scircle : public Square {
 public:
-  Scircle(float radius) : Square(radius) {
+  Scircle(float radius_) : Square(radius_*2) {
  shaderPrimitive = true; 
     transparent = true;
+    properties->fRadius = radius_;
   }
+  // float radius;
 };
 
 class circleFan : public Shape {
