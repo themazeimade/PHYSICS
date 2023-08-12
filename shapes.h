@@ -18,6 +18,8 @@ struct objProperties {
   glm::vec3 vgravity;
   glm::vec3 vprevPos;
   glm::vec3 vImpactforces;
+  glm::vec3 vTangent;
+  float fNormalForce;
   bool bCollision;
 
 

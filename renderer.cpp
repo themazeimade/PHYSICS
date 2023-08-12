@@ -274,7 +274,7 @@ void renderer::appInput() {
     // set object pos with click pos;
     //
     glm::vec2 norm = {currClickX / width * 2 - 1, currClickY / height * 2 - 1};
-    std::cout << "NDC x:" << norm[0] << "and NDC y:" << norm[1] << std::endl;
+    // std::cout << "NDC x:" << norm[0] << "and NDC y:" << norm[1] << std::endl;
 
     glm::mat4 view = glm::lookAt(glm::vec3(lookat0, lookat1, lookat2),
                                  glm::vec3(0.0f), glm::vec3(0, 1.0f, 0));

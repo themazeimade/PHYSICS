@@ -27,10 +27,12 @@
 #define _GRAVITY -9.8
 #define _AIRDENSITY 1.23
 #define _DRAG 0.6
-#define _WINDSPEED 1.5
+#define _WINDSPEED 0.3
 #define _TIMESTEP 0.005555 
 #define _RESTITUTION 0.5
 #define _STEPCOUNT 3
+#define _U_STATIC 0.7
+#define _U_KINETIC 0.3
 // #define _TARGET_FPS 0.01667
 
 VkResult CreateDebugUtilsMessengerEXT(

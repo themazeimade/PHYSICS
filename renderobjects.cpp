@@ -7,25 +7,44 @@
 #include <stdint.h>
 
 objProperties::objProperties() {
-  std::cout << "properties constructor called" << std::endl;
+  // std::cout << "properties constructor called" << std::endl;
   fmass = 1.0f;
 
-  vpos = glm::vec3(0.0f,0.0f,0.0f);
-  vprevPos = glm::vec3(0.0f,0.0f,0.0f);
+  vpos = glm::vec3(0.0f, 0.0f, 0.0f);
+  vprevPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
-  vvelocity = glm::vec3(0.0f,0.0f,0.0f);
+  vvelocity = glm::vec3(0.0f, 0.0f, 0.0f);
   fspeed = 0.0f;
-  vforces = glm::vec3(0.0f,0.0f,0.0f);
+  vforces = glm::vec3(0.0f, 0.0f, 0.0f);
+  fNormalForce = 0.0f;
   // fRadius = _radius;
   vgravity.x = 0.0f;
   vgravity.y = fmass * _GRAVITY;
-  vImpactforces = glm::vec3(0.0f,0.0f,0.0f);
+  vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
+  vTangent = glm::vec3(0.0f);
 };
 
 void objProperties::CalcF() {
   vforces = glm::vec3(0.f);
 
   if (bCollision) {
+    // handle friction
+    int HoV = 1;
+    if (vTangent.x == 1)
+      HoV = 0;
+    float dirFriction = glm::dot(vforces, vTangent);
+
+    if (glm::abs(dirFriction) <= fNormalForce * _U_STATIC) {
+      vforces[HoV] = 0;
+    } else {
+      glm::vec3 vfriction = vTangent;
+      if (dirFriction <= 0) {
+        vfriction *= fNormalForce * static_cast<float>(_U_KINETIC);
+      } else {
+        vfriction *= -1 * fNormalForce * static_cast<float>(_U_KINETIC);
+      }
+      vforces += vfriction;
+    }
     vforces += vImpactforces;
   } else {
     // std::cout << "adding external forces" << std::endl;
@@ -44,7 +63,7 @@ void objProperties::CalcF() {
     vforces += vDrag;
 
     // // Wind
-    glm::vec3 vWind(0.0f,0.0f,0.0f);
+    glm::vec3 vWind(0.0f, 0.0f, 0.0f);
     vWind.x = static_cast<float>(
         0.5 * _AIRDENSITY * _WINDSPEED * _WINDSPEED *
         static_cast<double>(3.14159f * fRadius * fRadius) * _DRAG);
@@ -55,20 +74,21 @@ void objProperties::CalcF() {
 void objProperties::updateEuler(double dt) {
   glm::vec3 a;
   glm::vec3 dv;
-  glm::vec3 ds;
+  glm::vec3 ds(0.0f);
 
   a = vforces / fmass;
   dv = a * static_cast<float>(dt);
   vvelocity += dv;
+  fspeed = glm::length(vvelocity);
 
-  ds = vvelocity * static_cast<float>(dt);
+  if (fspeed >= 0.5) {
+    ds = vvelocity * static_cast<float>(dt);
+  };
   // vprevPos = vpos;
   vpos += ds;
+  // std::cout << "vprevPos = ("<< vprevPos.x << ";" << vprevPos.y << ")" << std::endl;
+  // std::cout << "vpos = ("<< vpos.x << ";" << vpos.y << ")" << std::endl;
   
-  // std::cout << "vprevPos: (" << vprevPos.x << ", " << vprevPos.y << ")" << std::endl
-  //           << "vpos: (" << vpos.x << ", " << vpos.y << ")" << std::endl;
-
-  fspeed = glm::length(vvelocity);
 }
 
 void renderobject::createMeshBuffers() {
@@ -221,11 +241,11 @@ void renderobject::createMeshPipeline() {
 void renderObjectQueue::push_renderobject(std::unique_ptr<renderobject> ro_) {
   if (ro_->mesh->transparent == true) {
     shapes.push_front(std::move(ro_));
-    std::cout << "pushed to the front" << std::endl;
+    // std::cout << "pushed to the front" << std::endl;
     frontier++;
   } else {
     shapes.push_back(std::move(ro_));
-    std::cout << "pushed to the back" << std::endl;
+    // std::cout << "pushed to the back" << std::endl;
   }
 };
 
