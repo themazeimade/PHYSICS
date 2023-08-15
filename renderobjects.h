@@ -31,6 +31,7 @@ class renderobject {
 public:
   renderobject(vkEngine *context_) : context(context_) {
     PipeLayout = context_->getPipeLayout();
+    physicsEnable = false;
     // properties = new objProperties;
     // mesh->properties = std::make_unique<objProperties>();
   };
@@ -57,6 +58,7 @@ public:
   // std::unique_ptr<objProperties> properties;
   UniformBufferObject MVP;
 
+  bool physicsEnable;
   // fill objects
   std::vector<VkBuffer> uniformBuffers;
   std::vector<VkDeviceMemory> uniformBuffersMemory;

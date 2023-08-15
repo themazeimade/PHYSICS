@@ -11,7 +11,7 @@ objProperties::objProperties() {
   fmass = 1.0f;
 
   vpos = glm::vec3(0.0f, 0.0f, 0.0f);
-  vprevPos = glm::vec3(0.0f, 0.0f, 0.0f);
+  // vprevPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
   vvelocity = glm::vec3(0.0f, 0.0f, 0.0f);
   fspeed = 0.0f;
@@ -80,15 +80,16 @@ void objProperties::updateEuler(double dt) {
   dv = a * static_cast<float>(dt);
   vvelocity += dv;
   fspeed = glm::length(vvelocity);
+  ds = vvelocity * static_cast<float>(dt);
+  // if (bCollision == false)
+  //   vprevPos = vpos;
 
-  if (fspeed >= 0.5) {
-    ds = vvelocity * static_cast<float>(dt);
-  };
-  // vprevPos = vpos;
+  // if (fspeed >= 0.1) {
   vpos += ds;
-  // std::cout << "vprevPos = ("<< vprevPos.x << ";" << vprevPos.y << ")" << std::endl;
-  // std::cout << "vpos = ("<< vpos.x << ";" << vpos.y << ")" << std::endl;
-  
+  // };
+  // std::cout << "vprevPos = ("<< vprevPos.x << ";" << vprevPos.y << ")" <<
+  // std::endl; std::cout << "vpos = ("<< vpos.x << ";" << vpos.y << ")" <<
+  // std::endl;
 }
 
 void renderobject::createMeshBuffers() {

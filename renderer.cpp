@@ -300,6 +300,7 @@ void renderer::appInput() {
     click[1] *= -1.f;
     objectQueue->shapes.front()->mesh->properties->vvelocity = glm::vec3(click, 0.f);
     objectQueue->shapes.front()->mesh->properties->fspeed = clickRatio * MAX_VELOCITY;
+    objectQueue->shapes.front()->physicsEnable = true; 
     setVelocityCircle = false;
     // objectQueue->shapes.front()->setvelocity();
   }

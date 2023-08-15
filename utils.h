@@ -32,7 +32,7 @@
 #define _RESTITUTION 0.5
 #define _STEPCOUNT 3
 #define _U_STATIC 0.7
-#define _U_KINETIC 0.3
+#define _U_KINETIC 0.6
 // #define _TARGET_FPS 0.01667
 
 VkResult CreateDebugUtilsMessengerEXT(
