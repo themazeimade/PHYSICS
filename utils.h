@@ -27,7 +27,7 @@
 #define _GRAVITY -9.8
 #define _AIRDENSITY 1.23
 #define _DRAG 0.6
-#define _WINDSPEED 0.3
+#define _WINDSPEED 1.5
 #define _TIMESTEP 0.005555 
 #define _RESTITUTION 0.5
 #define _STEPCOUNT 3

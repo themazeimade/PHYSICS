@@ -2,40 +2,83 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/geometric.hpp>
 
-bool physicsEngine::checkwallcollisions(glm::vec3 p1, glm::vec3 p2,
-                                        glm::vec3 q1, glm::vec3 q2) {
-  // retrieve and learned from :
-  // https://www.geeksforgeeks.org/orientation-3-ordered-points/
-  int o1 = line::orientation(p1, p2, q1);
-  int o2 = line::orientation(p1, p2, q2);
-  int o3 = line::orientation(q1, q2, p1);
-  int o4 = line::orientation(q1, q2, p2);
+void physicsEngine::checkObjectsCollisions(renderObjectQueue *queue) {
+  int frontier = queue->frontier;
+  // std::deque<glm::vec3> displacement;
+  for (size_t i = 0; i <= frontier; i++) {
+    for (size_t j = i + 1; j <= frontier; j++) {
+      // if (i == j)
+      //   continue;
+      auto object01 = queue->shapes[i]->mesh->properties.get();
+      auto object02 = queue->shapes[j]->mesh->properties.get();
 
-  if (o1 != o2 && o3 != o4)
-    return true;
+      float r = 0.0f;
+      ;                  // sum of objects radiuses;
+      glm::vec3 d(0.0f); // distance from center points of both obj;
+      float s = 0.0f;    // difference between d and r
+      glm::vec3 n(0.0f);
+      glm::vec3 vr01(0.0f);
+      glm::vec3 vr02(0.0f);
+      float vrn01 = 0.0f;
+      float vrn02 = 0.0f;
+      glm::vec3 Fi(0.0f);
+      float J = 0.0f;
 
-  // Special Cases
-  // p1, q1 and p2 are collinear and p2 lies on segment p1q1
-  if (o1 == 0 && line::insideSegment(p1, q1, p2))
-    return true;
+      r = object01->fRadius + object02->fRadius;
+      d = object01->vpos - object02->vpos;
+      s = glm::length(d) - r;
+      // std::cout << "new col pass output:" << std::endl
+      //           << "s:  " << s << std::endl;
 
-  // p1, q1 and q2 are collinear and q2 lies on segment p1q1
-  if (o2 == 0 && line::insideSegment(p1, q2, p2))
-    return true;
+      if (s <= 0.0f) { // there is collision between these two;
+        // d = glm::normalize(d);
+        n = glm::normalize(d);
+        // std::cout << "n components:  " << n.x << " " << n.y << " " << n.z
+        //           << std::endl;
+        vr01 = object01->vvelocity - object02->vvelocity;
+        vr02 = object02->vvelocity - object01->vvelocity;
+        vrn01 = glm::dot(vr01, n);
+        vrn02 = glm::dot(vr02, -n);
+        float vrnplus = glm::abs(vrn01) + glm::abs(vrn02);
+        if (vrn01 < 0.0f) {
 
-  // p2, q2 and p1 are collinear and p1 lies on segment p2q2
-  if (o3 == 0 && line::insideSegment(q1, p1, q2))
-    return true;
+          J = -1.0f * (glm::dot(vr01, n)) *
+              (1 + static_cast<float>(_RESTITUTION)) /
+              (1 / object01->fmass + 1 / object02->fmass);
+          Fi = n;
+          Fi *= J / static_cast<float>(_TIMESTEP);
+          object01->vImpactforces += Fi;
+          object01->vpos -= (glm::abs(vrn01) / vrnplus) * n * s;
+          // displacement.push_front(n * s);
+          object01->bObjectCollision = true;
+        }
+        if (vrn02 < 0.0f) {
 
-  // p2, q2 and q1 are collinear and q1 lies on segment p2q2
-  if (o4 == 0 && line::insideSegment(q1, p2, q2))
-    return true;
-
-  return false; // Doesn't fall in any of the above cases
+          J = -1.0f * (glm::dot(vr02, -n)) *
+              (1 + static_cast<float>(_RESTITUTION)) /
+              (1 / object01->fmass + 1 / object02->fmass);
+          Fi = -n;
+          Fi *= J / static_cast<float>(_TIMESTEP);
+          object02->vImpactforces += Fi;
+          object02->vpos -= (glm::abs(vrn02) / vrnplus) * -n * s;
+          // displacement.push_front(n * s);
+          object02->bObjectCollision = true;
+        }
+        object01 = nullptr;
+        object02 = nullptr;
+      }
+    }
+  }
+  // int i = 0;
+  // for (auto it = displacement.begin(); it <= (displacement.begin() +
+  // frontier);
+  //      it++) {
+  //   queue->shapes[i]->mesh->properties->vpos -= *it;
+  //   i++;
+  // }
 }
-
-bool physicsEngine::checkCollisions(renderobject *boundary,
-                                    renderobject *simObject) {
+bool physicsEngine::checkWallCollisions(renderobject *boundary,
+                                        renderobject *simObject) {
   // std::cout << std::endl << "Physics output" << std::endl;
   // glm::vec3 n(0.0f, 0.0f, 0.0f);
   glm::vec3 vr(0.0f, 0.0f, 0.0f);
@@ -46,7 +89,7 @@ bool physicsEngine::checkCollisions(renderobject *boundary,
 
   std::vector<Vertex> wallverts = boundary->mesh->vertices;
   objProperties *objectData = simObject->mesh->properties.get();
-  objectData->vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
+  // objectData->vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
   // glm::vec3 storePrevPos(0.0f);
   // storePrevPos = objectData->vpos;
 
@@ -108,13 +151,7 @@ bool physicsEngine::checkCollisions(renderobject *boundary,
       break;
     }
     if (wallColl == true) {
-
-      // collidedWall = wallPoint01 - wallPoint02;
-      // std::cout << "collision on wall: " << wall << std::endl;
-      // std::cout << objectData->vpos.x << " pos.x" << std::endl;
-      // std::cout << objectData->vpos.y << " pos.y" << std::endl;
-      // std::cout << objectData->vforces.x << " forces.x" << std::endl;
-      // std::cout << objectData->vforces.y << " forces.y" << std::endl;
+      // std::cout << "there is collision" << std::endl;
       collisionCount++;
       impactDir += glm::normalize(wallPoint01 - wallPoint02);
       if (collisionCount == 1) {
@@ -122,8 +159,10 @@ bool physicsEngine::checkCollisions(renderobject *boundary,
                             wallPoint01, wallPoint02, intersectionpoint);
       }
     }
-    if (collisionCount == 2)
+    if (collisionCount == 2) {
+      impactDir = glm::normalize(impactDir);
       break;
+    }
   }
   objectData->vTangent = impactDir;
   impactDir = rotationMat * glm::vec4(impactDir, 0.f);
@@ -137,12 +176,12 @@ bool physicsEngine::checkCollisions(renderobject *boundary,
     Fi = impactDir;
     Fi *= J / static_cast<float>(_TIMESTEP);
     objectData->vImpactforces = Fi;
-    objectData->fNormalForce = glm::length(Fi);
+    objectData->fNormalForce = dot(objectData->vforces, impactDir);
+    objectData->vpos.y = intersectionpoint.y;
+    objectData->vpos.x = intersectionpoint.x;
     // if (intersectionpoint.x == 0.0f) {
     // std::cout << "fuck no intersection point" << std::endl;
     // }
-    objectData->vpos.y = intersectionpoint.y;
-    objectData->vpos.x = intersectionpoint.x;
 
     hasCollision = true;
   }
@@ -158,19 +197,39 @@ void physicsEngine::updatesimulation(renderObjectQueue *queue) {
     return;
   }
   double dt = _TIMESTEP;
-  auto boundingBox = queue->shapes.back().get();
 
+  auto boundingBox = queue->shapes.back().get();
   for (int i = 0; i < _STEPCOUNT; i++) {
+    checkObjectsCollisions(queue);
+    // wall collisions below
     for (auto it = queue->shapes.begin() + _frontier;
          it >= queue->shapes.begin(); it--) {
       auto _simObject = it->get();
-      if (_simObject->physicsEnable == false) continue;
+
+      if (_simObject->physicsEnable == false)
+        continue;
       _simObject->mesh->properties->bCollision =
-          checkCollisions(boundingBox, _simObject);
+          checkWallCollisions(boundingBox, _simObject);
       _simObject->mesh->properties->CalcF();
       _simObject->mesh->properties->updateEuler(dt);
       _simObject = nullptr;
     }
+
+    // checkObjectsCollisions(queue);
+    // std::cout << "finished object coll" << std::endl;
+
+    // for (auto it = queue->shapes.begin() + _frontier;
+    //      it >= queue->shapes.begin(); it--) {
+    //   auto _simObject = it->get();
+    //
+    //   if (_simObject->physicsEnable == false)
+    //     continue;
+    //
+    //   _simObject->mesh->properties->CalcF();
+    //   _simObject->mesh->properties->updateEuler(dt);
+    //   _simObject->mesh->properties->vImpactforces = {0.0f,0.0f,0.0f};
+    //   _simObject = nullptr;
+    // }
   }
   boundingBox = nullptr;
   queue = nullptr;

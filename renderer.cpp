@@ -265,7 +265,7 @@ void renderer::appInput() {
   if (drawCircle == true) {
     std::unique_ptr<renderobject> appinput =
         std::make_unique<renderobject>(this);
-    appinput->mesh = std::make_unique<Scircle>(0.5f);
+    appinput->mesh = std::make_unique<Scircle>(1.0f);
     appinput->prepareRenderProperties();
 
     // objectQueue->push_renderobject(std::make_shared<renderobject>(this));

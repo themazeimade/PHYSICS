@@ -22,30 +22,58 @@ objProperties::objProperties() {
   vgravity.y = fmass * _GRAVITY;
   vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
   vTangent = glm::vec3(0.0f);
+  bObjectCollision = false;
+  bCollision = false;
 };
 
 void objProperties::CalcF() {
+  glm::vec3 vforcesImpostor = vforces;
   vforces = glm::vec3(0.f);
 
-  if (bCollision) {
-    // handle friction
+  // if(bObjectCollision) {
+  //
+  // }
+  if (bCollision == true || bObjectCollision == true) {
     int HoV = 1;
-    if (vTangent.x == 1)
+    if (vTangent.x == 1 || vTangent.x == -1)
       HoV = 0;
-    float dirFriction = glm::dot(vforces, vTangent);
-
-    if (glm::abs(dirFriction) <= fNormalForce * _U_STATIC) {
-      vforces[HoV] = 0;
-    } else {
-      glm::vec3 vfriction = vTangent;
-      if (dirFriction <= 0) {
-        vfriction *= fNormalForce * static_cast<float>(_U_KINETIC);
+    float dirFriction = glm::dot(
+        vforcesImpostor, vTangent); // normal force on windd and gravity that
+    float dirVelocity = glm::dot(
+        vvelocity, vTangent); // normal force on windd and gravity that
+    if (bCollision == true) {
+      // handle friction
+      if (vvelocity[HoV] <= 0.01f && vvelocity[HoV] >= -0.01f ) {
+        // std::cout << "hi im inside before htis" << std::endl;
+        if (glm::abs(dirFriction) <= glm::abs(fNormalForce) * _U_STATIC) {
+          // std::cout << "hi im inside this shitt" << std::endl;
+          vforces[HoV] = 0.0f;
+          vvelocity[HoV] = 0.0f;
+        }
       } else {
-        vfriction *= -1 * fNormalForce * static_cast<float>(_U_KINETIC);
+        glm::vec3 vfriction = vTangent;
+        if (dirVelocity < 0.0f) {
+          std::cout << "hi im going to the left" << std::endl;
+          vfriction *= -1 * fNormalForce * static_cast<float>(_U_KINETIC);
+        } else {
+          // std::cout << "hi im goind to the rigth" << std::endl;
+          vfriction *= fNormalForce * static_cast<float>(_U_KINETIC);
+        }
+        vforces += vfriction;
       }
-      vforces += vfriction;
+      fNormalForce = -1;
     }
     vforces += vImpactforces;
+
+    // if (bCollision == true) {
+    //   if (vvelocity[HoV] <= 0.2f) {
+    //     if (glm::abs(dirFriction) <= fNormalForce * _U_STATIC) {
+    //       vforces[HoV] = 0.0f;
+    //       vvelocity[HoV] = 0.0f;
+    //     }
+    //   }
+    // }
+
   } else {
     // std::cout << "adding external forces" << std::endl;
     vforces += vgravity;
@@ -69,6 +97,10 @@ void objProperties::CalcF() {
         static_cast<double>(3.14159f * fRadius * fRadius) * _DRAG);
     vforces += vWind;
   }
+
+  // std::cout << "forces x: " << vforces.x << std::endl;
+  // std::cout << "forces y: " << vforces.y << std::endl;
+  bObjectCollision = false;
 }
 
 void objProperties::updateEuler(double dt) {
@@ -77,15 +109,20 @@ void objProperties::updateEuler(double dt) {
   glm::vec3 ds(0.0f);
 
   a = vforces / fmass;
+  // std::cout << "vforces x: " << vforces.x << "y: " << vforces.y << std::endl;
   dv = a * static_cast<float>(dt);
   vvelocity += dv;
+  // std::cout << "vvelocity x: " << vvelocity.x << "y: " << vvelocity.y << std::endl;
   fspeed = glm::length(vvelocity);
+  // if (fspeed < 0.06f) vvelocity = {0.0f,0.0f,0.0f};
   ds = vvelocity * static_cast<float>(dt);
   // if (bCollision == false)
   //   vprevPos = vpos;
 
   // if (fspeed >= 0.1) {
   vpos += ds;
+
+  vImpactforces = {0.0f,0.0f,0.0f};
   // };
   // std::cout << "vprevPos = ("<< vprevPos.x << ";" << vprevPos.y << ")" <<
   // std::endl; std::cout << "vpos = ("<< vpos.x << ";" << vpos.y << ")" <<
@@ -275,10 +312,10 @@ void renderObjectQueue::flushGuiCalls() {
                 static_cast<float>((*it)->mesh->properties->vvelocity.x));
     ImGui::Text("vvelocity.y: %.3f",
                 static_cast<float>((*it)->mesh->properties->vvelocity.y));
-    ImGui::Text("vprevPos.x: %.3f",
-                static_cast<float>((*it)->mesh->properties->vprevPos.x));
-    ImGui::Text("vprevPos.y: %.3f",
-                static_cast<float>((*it)->mesh->properties->vprevPos.y));
+    // ImGui::Text("vprevPos.x: %.3f",
+    //             static_cast<float>((*it)->mesh->properties->vprevPos.x));
+    // ImGui::Text("vprevPos.y: %.3f",
+    //             static_cast<float>((*it)->mesh->properties->vprevPos.y));
     ImGui::PopID();
     j++;
   }
