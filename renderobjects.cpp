@@ -11,7 +11,7 @@ objProperties::objProperties() {
   fmass = 1.0f;
 
   vpos = glm::vec3(0.0f, 0.0f, 0.0f);
-  // vprevPos = glm::vec3(0.0f, 0.0f, 0.0f);
+  vprevPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
   vvelocity = glm::vec3(0.0f, 0.0f, 0.0f);
   fspeed = 0.0f;
@@ -24,6 +24,7 @@ objProperties::objProperties() {
   vTangent = glm::vec3(0.0f);
   bObjectCollision = false;
   bCollision = false;
+  goingOut = false;
 };
 
 void objProperties::CalcF() {
@@ -53,7 +54,7 @@ void objProperties::CalcF() {
       } else {
         glm::vec3 vfriction = vTangent;
         if (dirVelocity < 0.0f) {
-          std::cout << "hi im going to the left" << std::endl;
+          // std::cout << "hi im going to the left" << std::endl;
           vfriction *= -1 * fNormalForce * static_cast<float>(_U_KINETIC);
         } else {
           // std::cout << "hi im goind to the rigth" << std::endl;
@@ -117,7 +118,7 @@ void objProperties::updateEuler(double dt) {
   // if (fspeed < 0.06f) vvelocity = {0.0f,0.0f,0.0f};
   ds = vvelocity * static_cast<float>(dt);
   // if (bCollision == false)
-  //   vprevPos = vpos;
+    // vprevPos = vpos;
 
   // if (fspeed >= 0.1) {
   vpos += ds;

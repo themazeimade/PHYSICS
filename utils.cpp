@@ -80,7 +80,7 @@ int line::orientation(glm::vec3 p, glm::vec3 p1, glm::vec3 p3) {
 bool line::pIntersection(glm::vec2 p1, glm::vec2 p2, glm::vec2 q1, glm::vec2 q2,
                          glm::vec2 &intersection) { // p2 is p1 direction as a line
   float x1 = p1.x, y1 = p1.y;
-  float x2 = p1.x-p2.x, y2 = p1.y-p2.y;
+  float x2 = p2.x, y2 = p2.y;
   float x3 = q1.x, y3 = q1.y;
   float x4 = q2.x, y4 = q2.y;
 
