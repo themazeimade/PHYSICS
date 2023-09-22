@@ -6,20 +6,22 @@
 #include <iostream>
 #include <stdint.h>
 
+bool objProperties::bounceEnable = false;
+
 objProperties::objProperties() {
   // std::cout << "properties constructor called" << std::endl;
   fmass = 1.0f;
 
   vpos = glm::vec3(0.0f, 0.0f, 0.0f);
   vprevPos = glm::vec3(0.0f, 0.0f, 0.0f);
-
+  vInitialForce = glm::vec3(0.0f);
   vvelocity = glm::vec3(0.0f, 0.0f, 0.0f);
   fspeed = 0.0f;
   vforces = glm::vec3(0.0f, 0.0f, 0.0f);
   fNormalForce = 0.0f;
-  // fRadius = _radius;
+  fRadius = 1.0f;
   vgravity.x = 0.0f;
-  vgravity.y = fmass * _GRAVITY;
+  vgravity.y = fmass * static_cast<float>(_GRAVITY);
   vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
   vTangent = glm::vec3(0.0f);
   bObjectCollision = false;
@@ -40,11 +42,11 @@ void objProperties::CalcF() {
       HoV = 0;
     float dirFriction = glm::dot(
         vforcesImpostor, vTangent); // normal force on windd and gravity that
-    float dirVelocity = glm::dot(
-        vvelocity, vTangent); // normal force on windd and gravity that
+    float dirVelocity =
+        glm::dot(vvelocity, vTangent); // normal force on windd and gravity that
     if (bCollision == true) {
       // handle friction
-      if (vvelocity[HoV] <= 0.01f && vvelocity[HoV] >= -0.01f ) {
+      if (vvelocity[HoV] <= 0.01f && vvelocity[HoV] >= -0.01f) {
         // std::cout << "hi im inside before htis" << std::endl;
         if (glm::abs(dirFriction) <= glm::abs(fNormalForce) * _U_STATIC) {
           // std::cout << "hi im inside this shitt" << std::endl;
@@ -78,20 +80,29 @@ void objProperties::CalcF() {
   } else {
     // std::cout << "adding external forces" << std::endl;
     vforces += vgravity;
+    vforces += vInitialForce;
 
+    // glm::normalize(vDrag);
+    if(objProperties::bounceEnable == false) {
     glm::vec3 vDrag(0.0f, 0.0f, 0.0f);
     float fDrag(0.0f);
 
     vDrag -= vvelocity;
-    glm::normalize(vDrag);
-
-    fDrag = static_cast<float>(
-        0.5 * _AIRDENSITY * static_cast<double>(fspeed * fspeed) *
-        static_cast<double>(3.14159f * fRadius * fRadius) * _DRAG);
+    if (glm::length(vvelocity) != 0) {
+      vDrag = glm::normalize(vDrag);
+    }
+    
+    fDrag = 0.5f * static_cast<float>(_AIRDENSITY) * (fspeed * fspeed) *
+            (3.14159f * fRadius * fRadius) * static_cast<float>(_DRAG);
     vDrag *= fDrag;
-    vforces += vDrag;
 
-    // // Wind
+    vforces += vDrag;
+  }
+
+    // std::cout << "vDrag x " <<vDrag.x << std::endl;
+    // std::cout << "vDrag y " <<vDrag.y << std::endl;
+    // std::cout << "vDrag z " <<vDrag.z << std::endl;
+    // // // Wind
     glm::vec3 vWind(0.0f, 0.0f, 0.0f);
     vWind.x = static_cast<float>(
         0.5 * _AIRDENSITY * _WINDSPEED * _WINDSPEED *
@@ -102,28 +113,32 @@ void objProperties::CalcF() {
   // std::cout << "forces x: " << vforces.x << std::endl;
   // std::cout << "forces y: " << vforces.y << std::endl;
   bObjectCollision = false;
+  // vInitialForce = glm::vec3(0.0f);
 }
 
 void objProperties::updateEuler(double dt) {
-  glm::vec3 a;
-  glm::vec3 dv;
+  glm::vec3 a(0.0f);
+  glm::vec3 dv(0.0f);
   glm::vec3 ds(0.0f);
 
   a = vforces / fmass;
   // std::cout << "vforces x: " << vforces.x << "y: " << vforces.y << std::endl;
   dv = a * static_cast<float>(dt);
   vvelocity += dv;
-  // std::cout << "vvelocity x: " << vvelocity.x << "y: " << vvelocity.y << std::endl;
+  // std::cout << "vvelocity x: " << vvelocity.x << "y: " << vvelocity.y <<
+  // std::endl;
   fspeed = glm::length(vvelocity);
   // if (fspeed < 0.06f) vvelocity = {0.0f,0.0f,0.0f};
   ds = vvelocity * static_cast<float>(dt);
   // if (bCollision == false)
-    // vprevPos = vpos;
+  // vprevPos = vpos;
 
-  // if (fspeed >= 0.1) {
-  vpos += ds;
+  if (glm::length(ds) >= 0.001) {
+    vpos += ds;
+  }
 
-  vImpactforces = {0.0f,0.0f,0.0f};
+  vImpactforces = {0.0f, 0.0f, 0.0f};
+  vInitialForce = glm::vec3(0.0f);
   // };
   // std::cout << "vprevPos = ("<< vprevPos.x << ";" << vprevPos.y << ")" <<
   // std::endl; std::cout << "vpos = ("<< vpos.x << ";" << vpos.y << ")" <<
@@ -228,6 +243,14 @@ void renderobject::createDescriptorPool() {
   // });
 }
 
+bool renderobject::changedPos() {
+  if (mesh->properties->vpos == lastcheckPos) {
+    return false;
+  }
+  lastcheckPos = mesh->properties->vpos;
+  return true;
+}
+
 void renderobject::prepareRenderProperties() {
   createMeshBuffers();
   createMVPBuffer();
@@ -313,6 +336,10 @@ void renderObjectQueue::flushGuiCalls() {
                 static_cast<float>((*it)->mesh->properties->vvelocity.x));
     ImGui::Text("vvelocity.y: %.3f",
                 static_cast<float>((*it)->mesh->properties->vvelocity.y));
+    ImGui::Text("vforce.x: %.3f",
+                static_cast<float>((*it)->mesh->properties->vforces.x));
+    ImGui::Text("vforce.y: %.3f",
+                static_cast<float>((*it)->mesh->properties->vforces.y));
     // ImGui::Text("vprevPos.x: %.3f",
     //             static_cast<float>((*it)->mesh->properties->vprevPos.x));
     // ImGui::Text("vprevPos.y: %.3f",

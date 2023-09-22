@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#define MAX_VELOCITY 25.0f
+#define MAX_INITIALFORCE 25000.0f
 
 // struct objProperties {
 //   // physicsProperties();
@@ -57,6 +57,10 @@ public:
   std::unique_ptr<Shape> mesh;
   // std::unique_ptr<objProperties> properties;
   UniformBufferObject MVP;
+
+  bool changedPos();
+  glm::vec3 lastcheckPos = {-9999.f,-9999.f,-9999.f};
+  int fadeCount = 0.0f;;
 
   bool physicsEnable;
   // fill objects

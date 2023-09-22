@@ -276,7 +276,8 @@ void physicsEngine::updatesimulation(renderObjectQueue *queue) {
     std::cout << "frontier not iniated" << std::endl;
     return;
   }
-  double dt = _TIMESTEP;
+  
+  double dt = static_cast<double>(vkEngine::frameTime/3.f);
 
   auto boundingBox = queue->shapes.back().get();
   for (int i = 0; i < _STEPCOUNT; i++) {
@@ -313,7 +314,17 @@ void physicsEngine::updatesimulation(renderObjectQueue *queue) {
       //
       _simObject->mesh->properties->CalcF();
       _simObject->mesh->properties->updateEuler(dt);
-      // _simObject->mesh->properties->vImpactforces = {0.0f,0.0f,0.0f};
+//delete resting object
+      if(!(_simObject->changedPos())) {
+        _simObject->fadeCount++;
+        if(_simObject->fadeCount >= vkEngine::refreshRate * 3) {
+          // _simObject->fadeRN = true;
+          queue->shapes.erase(it);
+          _frontier--;
+          
+        }
+      };
+
       _simObject = nullptr;
     }
   }

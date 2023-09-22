@@ -10,6 +10,7 @@ struct objProperties {
   // physicsProperties();
   // ~physicsProperties();
   float fmass;
+  glm::vec3 vInitialForce;
   glm::vec3 vpos;
   glm::vec3 vvelocity;
   float fspeed;
@@ -23,6 +24,8 @@ struct objProperties {
   bool bCollision;
   bool bObjectCollision;
   bool goingOut;
+  
+  static bool bounceEnable;
 
 
   void CalcF();

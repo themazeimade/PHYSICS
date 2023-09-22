@@ -15,20 +15,6 @@ int main() {
     b->mesh = std::make_unique<Square>(19.f);
     b->prepareRenderProperties();
     app->objectQueue->push_renderobject(std::move(b));
-    // b.reset();
-    
-    // std::unique_ptr<renderobject> a = std::make_unique<renderobject>(app.get());
-    // a->mesh = std::make_unique<Scircle>(0.5f);
-    // a->prepareRenderProperties();
-    // app->objectQueue->push_renderobject(std::move(a));
-    // objQueue->push_renderobject(std::make_unique<renderobject>(app.get()));
-    // objQueue->shapes.back()->mesh = new circleFan(5.f, 32);
-    // objQueue->shapes.back()->prepareRenderProperties();
-    // std::unique_ptr<renderobject> a = std::make_unique<renderobject>(app.get());
-    // a->mesh = std::make_unique<Scircle>(3.f);
-    // a->prepareRenderProperties();
-    // objQueue->push_renderobject(a);
-    // a.reset();
     app->renderLoop();
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;

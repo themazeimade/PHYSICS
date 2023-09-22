@@ -47,12 +47,15 @@ public:
   double initialY = -1.;
   double currClickX;
   double currClickY;
-  glm::vec2 click = {0.0, 0.0};
+  glm::vec2 click = {0.0f, 0.0f};
   float clickLength;
   float clickRatio;
   bool drawCircle = false;
   bool setVelocityCircle = false; 
   bool LeftClick = false;
+
+  static int refreshRate;
+  static float frameTime;
 
 protected:
   GLFWwindow *window;
@@ -229,3 +232,4 @@ bool hasStencilComponent(VkFormat format);
   //                          ImDrawData *draw_data = nullptr);
   void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 };
+

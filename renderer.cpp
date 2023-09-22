@@ -53,11 +53,9 @@ void renderer::draw_imgui() {
     objectQueue->flushGuiCalls();
     ImGui::End();
 
-    ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!"
+    ImGui::Begin("Object Info"); // Create a window called "Hello, world!"
                                    // and append into it.
 
-    ImGui::Text("This is some useful text."); // Display some text (you can
-                                              // use a format strings too)
 
     ImGui::SliderFloat("sides", &lookat0, 0.0f,
                        10.0f); // Edit 1 float using a slider from 0.0f to 1.0f
@@ -69,9 +67,7 @@ void renderer::draw_imgui() {
         "clear color",
         (float *)&clear_color); // Edit 3 floats representing a color
 
-    if (ImGui::Button("Button")) // Buttons return true when clicked (most
-                                 // widgets return true when edited/activated)
-      counter++;
+    ImGui::Checkbox("More bounce", &(objProperties::bounceEnable));
 
     ImGui::SameLine();
     ImGui::Text("counter = %d", counter);
@@ -83,18 +79,18 @@ void renderer::draw_imgui() {
                 1000.0f / io.Framerate, io.Framerate);
     // ImGui::Text("Cursor Xpos: %.2f and Ypos: %.2f ",
     // static_cast<float>(currX), static_cast<float>(currY));
-    // ImVec2 mPos = ImGui::GetMousePos();
-    // ImGui::Text("Cursor Xpos: %.2f and Ypos: %.2f ", mPos.x, mPos.y);
-    // ImGui::Text("Was Clicked: %i, Last initial click at x: %.2f and y: %.2f",
-    //             LeftClick, initialX, initialY);
-    // ImGui::Spacing();
-    // ImGui::Text("Current click at x: %.2f and y: %.2f", currClickX, currClickY);
-    // ImGui::Text("click Direction: (%.2f , %.2f), click magnitude: %.2f",
-    //             click[0], click[1], clickLength);
-    // ImGui::Text("clickratio: %.2f", clickRatio);
-    // ImGui::Text("velocity x: %.2f, y: %.2f",
-    //             objectQueue->shapes.front()->mesh->properties->vvelocity[0],
-    //             objectQueue->shapes.front()->mesh->properties->vvelocity[1]);
+    ImVec2 mPos = ImGui::GetMousePos();
+    ImGui::Text("Cursor Xpos: %.2f and Ypos: %.2f ", mPos.x, mPos.y);
+    ImGui::Text("Was Clicked: %i, Last initial click at x: %.2f and y: %.2f",
+                LeftClick, initialX, initialY);
+    ImGui::Spacing();
+    ImGui::Text("Current click at x: %.2f and y: %.2f", currClickX, currClickY);
+    ImGui::Text("click Direction: (%.2f , %.2f), click magnitude: %.2f",
+                click[0], click[1], clickLength);
+    ImGui::Text("clickratio: %.2f", clickRatio);
+    ImGui::Text("velocity x: %.2f, y: %.2f",
+                objectQueue->shapes.front()->mesh->properties->vvelocity[0],
+                objectQueue->shapes.front()->mesh->properties->vvelocity[1]);
     ImGui::Text("last circle speed: %.2f",
                 objectQueue->shapes.front()->mesh->properties->fspeed);
     ImGui::End();
@@ -296,11 +292,25 @@ void renderer::appInput() {
     // glm
     int hip = glm::length(glm::vec2(width, height));
     clickRatio = std::min(clickLength / hip, 1.f);
-    click = glm::normalize(click) * clickRatio * MAX_VELOCITY;
+    click = glm::normalize(click) * clickRatio * MAX_INITIALFORCE;
     click[1] *= -1.f;
-    objectQueue->shapes.front()->mesh->properties->vvelocity = glm::vec3(click, 0.f);
-    objectQueue->shapes.front()->mesh->properties->fspeed = clickRatio * MAX_VELOCITY;
-    objectQueue->shapes.front()->physicsEnable = true; 
+
+    // glm::vec3 a = {1.0f,0.0f,0.0f};
+    // a *= static_cast<float>(MAX_VELOCITY);
+    objectQueue->shapes.front()->mesh->properties->vInitialForce +=
+        glm::vec3(click, 0.f);
+    // objectQueue->shapes.front()->mesh->properties->vInitialForce =a;
+    // objectQueue->shapes.front()->mesh->properties->fspeed = clickRatio *
+    // MAX_VELOCITY;
+    // objectQueue->shapes.front()->mesh->properties->fspeed =
+    //     glm::length(objectQueue->shapes.front()->mesh->properties->vvelocity);
+
+    // std::cout << "velocity x: " << click[0] << "y: " << click[1] << std::endl;
+    // std::cout << "fspeed "
+    //           << objectQueue->shapes.front()->mesh->properties->fspeed
+    //           << std::endl;
+
+    objectQueue->shapes.front()->physicsEnable = true;
     setVelocityCircle = false;
     // objectQueue->shapes.front()->setvelocity();
   }

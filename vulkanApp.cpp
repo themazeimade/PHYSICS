@@ -5,6 +5,9 @@
 #include <stdexcept>
 #include <vector>
 
+int vkEngine::refreshRate = 0;
+float vkEngine::frameTime = 0.0f;
+
 void vkEngine::startContext() {
   initWindow();
   inputHandler();
@@ -19,6 +22,11 @@ void vkEngine::initWindow() {
   window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
   glfwSetWindowUserPointer(window, this);
   glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+  GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+  vkEngine::refreshRate = mode->refreshRate;
+  vkEngine::frameTime = 1/static_cast<float>(refreshRate);
 
   mainDeletion.push_function([=]() {
     glfwDestroyWindow(window);
@@ -55,29 +63,48 @@ void vkEngine::mouse_button_callback(GLFWwindow *window, int button, int action,
     return;
   }
   auto app = reinterpret_cast<vkEngine *>(glfwGetWindowUserPointer(window));
-  if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-    // glm::vec2 click = {app->currClickX - app->initialX,app->currClickY -
-    // app->initialY};
-    app->click[0] = app->currClickX - app->initialX;
-    app->click[1] = app->currClickY - app->initialY;
-    app->clickLength = glm::length(app->click);
-    app->LeftClick = false;
-    app->setVelocityCircle = true;
-    app->initialX = -1.;
-    app->initialY = -1.;
-  }
+  // if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+  //   // glm::vec2 click = {app->currClickX - app->initialX,app->currClickY -
+  //   // app->initialY};
+  //   app->click[0] = app->currClickX - app->initialX;
+  //   app->click[1] = app->currClickY - app->initialY;
+  //   app->clickLength = glm::length(app->click);
+  //   app->LeftClick = false;
+  //   app->setVelocityCircle = true;
+  //   app->initialX = -1.;
+  //   app->initialY = -1.;
+  // }
 
   if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
     app->LeftClick = true;
     app->drawCircle = true;
-    glfwGetCursorPos(window, &app->currClickX, &app->currClickY);
+    // glfwGetCursorPos(window, &app->currClickX, &app->currClickY);
     if (app->initialX < 0 || app->initialY < 0) {
       glfwGetCursorPos(window, &app->initialX, &app->initialY);
     }
   }
 }
 void vkEngine::key_callback(GLFWwindow *window, int key, int scancode,
-                            int action, int mods) {}
+                            int action, int mods) {
+    ImGuiIO &io = ImGui::GetIO();
+  if (io.WantCaptureMouse) {
+    return;
+  }
+  auto app = reinterpret_cast<vkEngine *>(glfwGetWindowUserPointer(window));
+
+  if(key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+    // glm::vec2 click = {app->currClickX - app->initialX,app->currClickY -
+    // app->initialY};
+    app->click[0] = static_cast<float>(app->currClickX - app->initialX);
+    app->click[1] = static_cast<float>(app->currClickY - app->initialY);
+    app->clickLength = glm::length(app->click);
+    app->LeftClick = false;
+    app->setVelocityCircle = true;
+    app->initialX = -1.;
+    app->initialY = -1.;
+    
+  }
+}
 
 void vkEngine::initVulkan() {
   createInstance();
