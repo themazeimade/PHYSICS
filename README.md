@@ -10,7 +10,7 @@ If the project uses vulkan, make sure you have installed the SDK and set as an e
   //either
   cmake -G "MinGW Makefiles" .. -DCMAKE_BUILD_TYPE=Debug
   //or
-  cmake -G "Visual Studio 15" .. -DCMAKE_BUILD_TYPE=Debug
+  cmake -G "Visual Studio 17" .. -DCMAKE_BUILD_TYPE=Debug
   //finally
   cmake --build . --config Debug
 </pre>
