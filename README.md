@@ -17,7 +17,7 @@ Also the project needs the GLFW include files and binaries, you need to compile 
   //finally
   cmake --build --config Debug // or Release
   cd ../../../
-// Main exacutable
+// Main executable
   mkdir build
   cd build
   //either
