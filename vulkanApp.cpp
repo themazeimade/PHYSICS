@@ -5,6 +5,16 @@
 #include <stdexcept>
 #include <vector>
 
+#ifdef _MSC_VER
+#define DEFAULT_VERTEXSHADER "../../shaders/vert.spv"
+#define DEFAULT_FRAGSHADER "../../shaders/frag.spv"
+#endif // DEBUG
+
+#ifdef __MINGW32__ 
+#define DEFAULT_VERTEXSHADER "../shaders/vert.spv"
+#define DEFAULT_FRAGSHADER "../shaders/frag.spv"
+#endif
+
 int vkEngine::refreshRate = 0;
 float vkEngine::frameTime = 0.0f;
 
@@ -580,8 +590,8 @@ void vkEngine::createDescriptorSetLayout() {
 }
 
 void vkEngine::createGraphicsPipeline() {
-  auto vertShaderCode = readFile("../shaders/vert.spv");
-  auto fragShaderCode = readFile("../shaders/frag.spv");
+  auto vertShaderCode = readFile(DEFAULT_VERTEXSHADER);
+  auto fragShaderCode = readFile(DEFAULT_FRAGSHADER);
 
   VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
   VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);

@@ -283,8 +283,8 @@ void physicsEngine::updatesimulation(renderObjectQueue *queue) {
   for (int i = 0; i < _STEPCOUNT; i++) {
     // checkObjectsCollisions(queue);
     // wall collisions below
-    for (auto it = queue->shapes.begin() + _frontier;
-         it >= queue->shapes.begin(); it--) {
+    for (auto it = queue->shapes.begin();
+         it <= queue->shapes.begin() + _frontier; it++) {
       auto _simObject = it->get();
       auto buffPrevPos = _simObject->mesh->properties->vpos;
       if (_simObject->physicsEnable == false)
@@ -305,8 +305,8 @@ void physicsEngine::updatesimulation(renderObjectQueue *queue) {
     checkObjectsCollisions(queue);
     // std::cout << "finished object coll" << std::endl;
 
-    for (auto it = queue->shapes.begin() + _frontier;
-         it >= queue->shapes.begin(); it--) {
+    for (auto it = queue->shapes.begin();
+        it <= queue->shapes.begin() + _frontier; it++) {
       auto _simObject = it->get();
       //
       if (_simObject->physicsEnable == false)
@@ -314,20 +314,25 @@ void physicsEngine::updatesimulation(renderObjectQueue *queue) {
       //
       _simObject->mesh->properties->CalcF();
       _simObject->mesh->properties->updateEuler(dt);
-//delete resting object
-      if(!(_simObject->changedPos())) {
-        _simObject->fadeCount++;
-        if(_simObject->fadeCount >= vkEngine::refreshRate * 3) {
-          // _simObject->fadeRN = true;
-          queue->shapes.erase(it);
-          _frontier--;
-          
-        }
-      };
 
       _simObject = nullptr;
     }
+    for (int i = _frontier; i >= 0; i--) {
+        auto it = (queue->shapes.begin() + i);
+        auto _simObject = it->get();
+        if (!(_simObject->changedPos())) {
+            _simObject->fadeCount++;
+            if (_simObject->fadeCount >= vkEngine::refreshRate * 3) {
+                //_simObject->fadeRN = true;
+                queue->shapes.erase(it);
+                _frontier--;
+                if (_frontier == -1) return;
+            }
+        };
+    }
   }
+  //delete resting object
+ 
   boundingBox = nullptr;
   queue = nullptr;
 }

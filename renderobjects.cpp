@@ -22,6 +22,7 @@ objProperties::objProperties() {
   fRadius = 1.0f;
   vgravity.x = 0.0f;
   vgravity.y = fmass * static_cast<float>(_GRAVITY);
+  vgravity.z = 0.0f;
   vImpactforces = glm::vec3(0.0f, 0.0f, 0.0f);
   vTangent = glm::vec3(0.0f);
   bObjectCollision = false;
@@ -293,10 +294,20 @@ void renderobject::updateUBO() {
   memcpy(uniformBuffersMapped[context->getCurrFrame()], &ubo_, sizeof(ubo_));
 }
 
+#ifdef _MSC_VER
+#define DERIV_VERTEXSHADER "../../shaders/vert01.spv"
+#define DERIV_FRAGSHADER "../../shaders/frag01.spv"
+#endif // DEBUG
+//
+#ifdef __MINGW32__ 
+#define DERIV_VERTEXSHADER "../shaders/vert01.spv"
+#define DERIV_FRAGSHADER "../shaders/frag01.spv"
+#endif
+
 void renderobject::createMeshPipeline() {
   if (mesh->shaderPrimitive != true) {
-    context->createDerivativePipeline("../shaders/vert01.spv",
-                                      "../shaders/frag01.spv", pipeline);
+    context->createDerivativePipeline(DERIV_VERTEXSHADER,
+                                      DERIV_FRAGSHADER, pipeline);
   }
 }
 
